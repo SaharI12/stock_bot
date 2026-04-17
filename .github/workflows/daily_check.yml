@@ -5,6 +5,9 @@ on:
     - cron: "15 14 * * 1-5"  # Every weekday at 14:15 UTC = 16:15 Israel = 15 min before US market open
   workflow_dispatch:         # Allow manual trigger from GitHub UI
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   run-signal-check:
     runs-on: ubuntu-latest
