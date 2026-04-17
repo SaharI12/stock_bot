@@ -2,7 +2,7 @@ name: Daily Dip Radar
 
 on:
   schedule:
-    - cron: "0 8 * * 1-5"  # Every weekday at 8am UTC (market days only)
+    - cron: "15 14 * * 1-5"  # Every weekday at 14:15 UTC = 16:15 Israel = 15 min before US market open
   workflow_dispatch:         # Allow manual trigger from GitHub UI
 
 jobs:
