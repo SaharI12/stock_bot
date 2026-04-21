@@ -42,7 +42,10 @@ def get_s5fi() -> float | None:
                 threads=True,
                 auto_adjust=True,
             )
-            closes = data["Close"] if "Close" in data.columns else data.xs("Close", axis=1, level=0)
+            if isinstance(data.columns, pd.MultiIndex):
+                closes = data["Close"]
+            else:
+                closes = data[["Close"]].rename(columns={"Close": batch[0]})
             for ticker in batch:
                 if ticker not in closes.columns:
                     continue

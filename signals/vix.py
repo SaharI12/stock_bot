@@ -1,14 +1,17 @@
 import yfinance as yf
+import pandas as pd
 
 
 def get_vix() -> float | None:
     """Fetch latest VIX closing value."""
     try:
-        vix = yf.Ticker("^VIX")
-        hist = vix.history(period="5d")
-        if hist is None or hist.empty:
+        data = yf.download("^VIX", period="5d", auto_adjust=True, progress=False)
+        if data is None or data.empty:
             return None
-        return round(float(hist["Close"].iloc[-1]), 2)
+        close = data["Close"]
+        if isinstance(close, pd.DataFrame):
+            close = close.iloc[:, 0]
+        return round(float(close.iloc[-1]), 2)
     except Exception as e:
         print(f"[vix] Error: {e}")
         return None
