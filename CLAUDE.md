@@ -17,16 +17,20 @@ stock_bot/
 │       └── daily_check.yml
 ├── signals/
 │   ├── __init__.py
-│   ├── fear_greed.py
-│   ├── vix.py
-│   ├── s5fi.py
-│   ├── red_days.py
-│   └── engine.py
+│   ├── engine.py       ← coordinates all signals, builds report
+│   ├── fear_greed.py   ← CNN Fear & Greed API (current + prev)
+│   ├── vix.py          ← CBOE VIX via yfinance (current + prev)
+│   ├── s5fi.py         ← S&P 500 breadth (current + prev, single batch)
+│   ├── red_days.py     ← SPY consecutive red/green days
+│   ├── rsi.py          ← RSI(14) on SPY with Wilder's smoothing
+│   └── indices.py      ← QQQ, DJIA, RUT prices + daily change + 150MA
 ├── bot/
 │   ├── __init__.py
 │   └── telegram_alert.py
 ├── main.py
 ├── requirements.txt
+├── README.md
+├── CHANGELOG.md
 ├── .env               ← local only, never committed
 └── .gitignore
 ```
@@ -35,21 +39,23 @@ stock_bot/
 
 ## What It Does
 
-Runs 4 market signal checks on both the buy side and sell side, then sends a Telegram alert.
-The final signal is determined by whichever side scores higher (or MIXED if tied and > 0).
+Scores the market on **5 buy indicators** and **5 sell indicators**. The side with the higher score wins (or MIXED if tied above zero). Sends a Telegram alert every weekday before market open.
 
-| Signal | Buy triggers at | Sell triggers at |
-|--------|-----------------|------------------|
-| Fear & Greed | score < 10 (Extreme Fear) | score > 80 (Extreme Greed) |
-| VIX | >= 30 | < 15 (Complacency) |
-| S5FI | < 20% above 50-day SMA | > 80% above 50-day SMA |
-| RSI(14) on SPY | < 30 (oversold) | > 70 (overbought) |
-| Red/Green Days | 3+ consecutive red days | 3+ consecutive green days |
+| Indicator | Buy triggers at | Sell triggers at |
+|-----------|-----------------|------------------|
+| Fear and Greed (CNN) | score < 10 (Extreme Fear) | score > 80 (Extreme Greed) |
+| VIX (CBOE) | >= 30 | < 15 (Complacency) |
+| S5FI (S&P 500 breadth) | < 20% above 50-day SMA | > 80% above 50-day SMA |
+| RSI(14) on SPY | < 30 (Oversold) | > 70 (Overbought) |
+| Red/Green Days (SPY) | 3+ consecutive red days | 3+ consecutive green days |
 
-Buy: 5/5 = EXTREME BUY, 4/5 = STRONG BUY, 3/5 = BUY, 2/5 = WATCH, 1/5 = MILD BUY, 0/5 = HOLD.
-Sell: 5/5 = EXTREME SELL, 4/5 = STRONG SELL, 3/5 = SELL, 2/5 = WATCH, 1/5 = MILD SELL, 0/5 = HOLD.
+**Signal levels (same scale for buy and sell, out of 5):**
+5 = EXTREME, 4 = STRONG, 3 = moderate, 2 = WATCH, 1 = MILD, 0 = HOLD.
 
-Message also shows SPY % distance from 150-day MA and QQQ / DJIA / RUT prices.
+**Message includes:**
+- SPY, QQQ, DJIA, RUT — current price, daily % change, and % vs 150-day MA
+- Each indicator — current value, previous day value, and trigger threshold
+- Separate Buy and Sell sections
 
 ---
 
