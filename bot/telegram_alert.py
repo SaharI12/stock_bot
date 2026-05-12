@@ -7,29 +7,39 @@ def _icon(triggered: bool) -> str:
     return "✅" if triggered else "❌"
 
 
+def _pct(value: float | None) -> str:
+    if value is None:
+        return "N/A"
+    sign = "+" if value >= 0 else ""
+    return f"{sign}{value}%"
+
+
+def _index_line(name: str, data: dict, is_djia: bool = False) -> str:
+    price = data.get("price")
+    pct = data.get("pct_change")
+    vs_ma = data.get("vs_150ma")
+
+    if price is None:
+        return f"*{name}*  N/A"
+
+    price_str = f"`{price:,}`" if is_djia else f"`${price}`"
+    pct_str = _pct(pct)
+    ma_str = f"vs 150MA: {_pct(vs_ma)}"
+
+    return f"*{name}*   {price_str}   {pct_str}   {ma_str}"
+
+
 def build_message(report: dict) -> str:
     today = date.today().strftime("%B %d, %Y")
     spy = report.get("spy_price", "N/A")
-    vs_150 = report.get("spy_vs_150ma")
+    spy_pct = report.get("spy_pct_change")
+    spy_ma = report.get("spy_vs_150ma")
     indices = report.get("indices", {})
     signal = report["signal"]
     buy_score = report["buy_score"]
     sell_score = report["sell_score"]
     br = report["buy_rules"]
     sr = report["sell_rules"]
-
-    # 150MA distance string
-    if vs_150 is not None:
-        sign = "+" if vs_150 >= 0 else ""
-        ma_str = f"_{sign}{vs_150}% vs 150MA_"
-    else:
-        ma_str = ""
-
-    # Index prices
-    qqq = f"QQQ `${indices.get('QQQ', 'N/A')}`"
-    djia_val = indices.get("DJIA")
-    djia = f"DJIA `{djia_val:,}`" if djia_val else "DJIA `N/A`"
-    rut = f"RUT `${indices.get('RUT', 'N/A')}`"
 
     fg = br["fear_greed"]
     vix = br["vix"]
@@ -40,16 +50,19 @@ def build_message(report: dict) -> str:
 
     lines = [
         f"📊 *Dip Radar — {today}*",
-        f"SPY `${spy}` {ma_str}  ·  {qqq}  ·  {djia}  ·  {rut}",
         "",
-        f"*{signal}*",
-        f"buy {buy_score}/5  ·  sell {sell_score}/5",
+        f"*SPY*   `${spy}`   {_pct(spy_pct)}   vs 150MA: {_pct(spy_ma)}",
+        _index_line("QQQ",  indices.get("QQQ",  {})),
+        _index_line("DJIA", indices.get("DJIA", {}), is_djia=True),
+        _index_line("RUT",  indices.get("RUT",  {})),
         "",
-        f"*F&G*  {fg['value']} ({fg.get('rating', '')})  —  B{_icon(fg['triggered'])} S{_icon(sr['fear_greed']['triggered'])}",
-        f"*VIX*  {vix['value']}  —  B{_icon(vix['triggered'])} S{_icon(sr['vix']['triggered'])}",
-        f"*S5FI*  {s5fi['value']}%  —  B{_icon(s5fi['triggered'])} S{_icon(sr['s5fi']['triggered'])}",
-        f"*RSI(14)*  {rsi['value']}  —  B{_icon(rsi['triggered'])} S{_icon(sr['rsi']['triggered'])}",
-        f"*Days*  {red['value']}↓ {grn['value']}↑  —  B{_icon(red['triggered'])} S{_icon(grn['triggered'])}",
+        f"*{signal}* _({buy_score}/5 buy · {sell_score}/5 sell)_",
+        "",
+        f"*F&G*   {fg['value']} _({fg.get('rating', '')})_   B{_icon(fg['triggered'])} <10   S{_icon(sr['fear_greed']['triggered'])} >80",
+        f"*VIX*   {vix['value']}   B{_icon(vix['triggered'])} ≥30   S{_icon(sr['vix']['triggered'])} <15",
+        f"*S5FI*  {s5fi['value']}%   B{_icon(s5fi['triggered'])} <20%   S{_icon(sr['s5fi']['triggered'])} >80%",
+        f"*RSI*   {rsi['value']}   B{_icon(rsi['triggered'])} <30   S{_icon(sr['rsi']['triggered'])} >70",
+        f"*Days*  {red['value']}↓ · {grn['value']}↑   B{_icon(red['triggered'])} 3+↓   S{_icon(grn['triggered'])} 3+↑",
         "",
         "_⚠️ Not financial advice._",
     ]

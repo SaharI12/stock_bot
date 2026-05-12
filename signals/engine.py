@@ -43,7 +43,8 @@ def run_engine() -> dict:
     print("Fetching index prices...")
     indices = get_index_prices()
 
-    # 150-day MA distance
+    # SPY daily change and 150-day MA distance
+    spy_pct_change = round((closes[-1] - closes[-2]) / closes[-2] * 100, 2) if len(closes) >= 2 else None
     sma150 = sum(closes[-150:]) / 150 if len(closes) >= 150 else None
     spy_vs_150ma = round((closes[-1] - sma150) / sma150 * 100, 1) if sma150 and closes else None
 
@@ -79,6 +80,7 @@ def run_engine() -> dict:
         "buy_score": buy_score,
         "sell_score": sell_score,
         "spy_price": spy_price,
+        "spy_pct_change": spy_pct_change,
         "spy_vs_150ma": spy_vs_150ma,
         "indices": indices,
         "buy_rules": {
