@@ -15,10 +15,19 @@ def get_fear_greed() -> dict:
         data = r.json()
         score = data["fear_and_greed"]["score"]
         rating = data["fear_and_greed"]["rating"]
-        return {"score": round(score, 1), "rating": rating}
+
+        prev_score = None
+        try:
+            historical = data["fear_and_greed_historical"]["data"]
+            if len(historical) >= 2:
+                prev_score = round(historical[-2]["y"], 1)
+        except Exception:
+            pass
+
+        return {"score": round(score, 1), "rating": rating, "prev_score": prev_score}
     except Exception as e:
         print(f"[fear_greed] Error: {e}")
-        return {"score": None, "rating": None}
+        return {"score": None, "rating": None, "prev_score": None}
 
 
 def check_fear_greed(score: float) -> bool:

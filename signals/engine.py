@@ -25,20 +25,28 @@ def get_sell_signal_level(score: int) -> str:
 
 
 def run_engine() -> dict:
-    print("Fetching Fear & Greed...")
+    print("Fetching Fear and Greed...")
     fg = get_fear_greed()
 
     print("Fetching VIX...")
-    vix = get_vix()
+    vix_data = get_vix()
+    vix = vix_data["value"]
+    vix_prev = vix_data["prev"]
 
     print("Fetching S5FI...")
-    s5fi = get_s5fi()
+    s5fi_data = get_s5fi()
+    s5fi = s5fi_data["value"]
+    s5fi_prev = s5fi_data["prev"]
 
     print("Fetching SPY closes...")
     closes = get_spy_closes(200)
     red_count = count_consecutive_red_days(closes)
     green_count = count_consecutive_green_days(closes)
+    red_count_prev = count_consecutive_red_days(closes[:-1])
+    green_count_prev = count_consecutive_green_days(closes[:-1])
+
     rsi = calculate_rsi(closes)
+    rsi_prev = calculate_rsi(closes[:-1])
 
     print("Fetching index prices...")
     indices = get_index_prices()
@@ -84,17 +92,49 @@ def run_engine() -> dict:
         "spy_vs_150ma": spy_vs_150ma,
         "indices": indices,
         "buy_rules": {
-            "fear_greed": {"value": fg["score"], "rating": fg["rating"], "triggered": b1},
-            "vix":        {"value": vix,          "triggered": b2},
-            "s5fi":       {"value": s5fi,          "triggered": b3},
-            "rsi":        {"value": rsi,           "triggered": b5},
-            "red_days":   {"value": red_count,     "triggered": b4},
+            "fear_greed": {
+                "value": fg["score"], "prev": fg["prev_score"],
+                "rating": fg["rating"], "triggered": b1,
+                "threshold": "< 10 (Extreme Fear)",
+            },
+            "vix": {
+                "value": vix, "prev": vix_prev,
+                "triggered": b2, "threshold": ">= 30",
+            },
+            "s5fi": {
+                "value": s5fi, "prev": s5fi_prev,
+                "triggered": b3, "threshold": "< 20%",
+            },
+            "rsi": {
+                "value": rsi, "prev": rsi_prev,
+                "triggered": b5, "threshold": "< 30 (Oversold)",
+            },
+            "red_days": {
+                "value": red_count, "prev": red_count_prev,
+                "triggered": b4, "threshold": ">= 3 consecutive red days",
+            },
         },
         "sell_rules": {
-            "fear_greed": {"value": fg["score"], "rating": fg["rating"], "triggered": s1},
-            "vix":        {"value": vix,          "triggered": s2},
-            "s5fi":       {"value": s5fi,          "triggered": s3},
-            "rsi":        {"value": rsi,           "triggered": s5},
-            "green_days": {"value": green_count,   "triggered": s4},
+            "fear_greed": {
+                "value": fg["score"], "prev": fg["prev_score"],
+                "rating": fg["rating"], "triggered": s1,
+                "threshold": "> 80 (Extreme Greed)",
+            },
+            "vix": {
+                "value": vix, "prev": vix_prev,
+                "triggered": s2, "threshold": "< 15 (Complacency)",
+            },
+            "s5fi": {
+                "value": s5fi, "prev": s5fi_prev,
+                "triggered": s3, "threshold": "> 80%",
+            },
+            "rsi": {
+                "value": rsi, "prev": rsi_prev,
+                "triggered": s5, "threshold": "> 70 (Overbought)",
+            },
+            "green_days": {
+                "value": green_count, "prev": green_count_prev,
+                "triggered": s4, "threshold": ">= 3 consecutive green days",
+            },
         },
     }

@@ -3,30 +3,42 @@ import requests
 from datetime import date
 
 
-def _icon(triggered: bool) -> str:
-    return "✅" if triggered else "❌"
-
-
-def _pct(value: float | None) -> str:
+def _pct(value: float | None, suffix: str = "%") -> str:
     if value is None:
         return "N/A"
     sign = "+" if value >= 0 else ""
-    return f"{sign}{value}%"
+    return f"{sign}{value}{suffix}"
 
 
-def _index_line(name: str, data: dict, is_djia: bool = False) -> str:
-    price = data.get("price")
-    pct = data.get("pct_change")
-    vs_ma = data.get("vs_150ma")
-
+def format_index_line(name: str, price, pct_change, vs_150ma, is_djia: bool = False) -> str:
     if price is None:
-        return f"*{name}*  N/A"
+        return f"{name}: N/A"
+    price_str = f"{price:,}" if is_djia else f"${price}"
+    return (
+        f"{name}: {price_str}  (prev change: {_pct(pct_change)})  "
+        f"vs 150MA: {_pct(vs_150ma)}"
+    )
 
-    price_str = f"`{price:,}`" if is_djia else f"`${price}`"
-    pct_str = _pct(pct)
-    ma_str = f"vs 150MA: {_pct(vs_ma)}"
 
-    return f"*{name}*   {price_str}   {pct_str}   {ma_str}"
+def format_rule(label: str, data: dict, show_rating: bool = False, unit: str = "") -> str:
+    icon = "✅" if data["triggered"] else "❌"
+    value = data.get("value")
+    prev = data.get("prev")
+    threshold = data.get("threshold", "")
+
+    if value is None:
+        value_str = "N/A"
+    elif show_rating:
+        value_str = f"{value} ({data.get('rating', '')})"
+    else:
+        value_str = f"{value}{unit}"
+
+    prev_str = ""
+    if prev is not None:
+        prev_display = f"{prev}{unit}" if unit else str(prev)
+        prev_str = f", prev: {prev_display}"
+
+    return f"{icon} {label}: {value_str}{prev_str}  (trigger: {threshold})"
 
 
 def build_message(report: dict) -> str:
@@ -41,30 +53,36 @@ def build_message(report: dict) -> str:
     br = report["buy_rules"]
     sr = report["sell_rules"]
 
-    fg = br["fear_greed"]
-    vix = br["vix"]
-    s5fi = br["s5fi"]
-    rsi = br["rsi"]
-    red = br["red_days"]
-    grn = sr["green_days"]
+    qqq  = indices.get("QQQ",  {})
+    djia = indices.get("DJIA", {})
+    rut  = indices.get("RUT",  {})
 
     lines = [
         f"📊 *Dip Radar — {today}*",
         "",
-        f"*SPY*   `${spy}`   {_pct(spy_pct)}   vs 150MA: {_pct(spy_ma)}",
-        _index_line("QQQ",  indices.get("QQQ",  {})),
-        _index_line("DJIA", indices.get("DJIA", {}), is_djia=True),
-        _index_line("RUT",  indices.get("RUT",  {})),
+        format_index_line("SPY",  spy,  spy_pct,  spy_ma),
+        format_index_line("QQQ",  qqq.get("price"),  qqq.get("pct_change"),  qqq.get("vs_150ma")),
+        format_index_line("DJIA", djia.get("price"), djia.get("pct_change"), djia.get("vs_150ma"), is_djia=True),
+        format_index_line("RUT",  rut.get("price"),  rut.get("pct_change"),  rut.get("vs_150ma")),
         "",
-        f"*{signal}* _({buy_score}/5 buy · {sell_score}/5 sell)_",
+        f"Signal: {signal}",
+        f"Buy triggered: {buy_score}/5  |  Sell triggered: {sell_score}/5",
         "",
-        f"*F&G*   {fg['value']} _({fg.get('rating', '')})_   B{_icon(fg['triggered'])} <10   S{_icon(sr['fear_greed']['triggered'])} >80",
-        f"*VIX*   {vix['value']}   B{_icon(vix['triggered'])} ≥30   S{_icon(sr['vix']['triggered'])} <15",
-        f"*S5FI*  {s5fi['value']}%   B{_icon(s5fi['triggered'])} <20%   S{_icon(sr['s5fi']['triggered'])} >80%",
-        f"*RSI*   {rsi['value']}   B{_icon(rsi['triggered'])} <30   S{_icon(sr['rsi']['triggered'])} >70",
-        f"*Days*  {red['value']}↓ · {grn['value']}↑   B{_icon(red['triggered'])} 3+↓   S{_icon(grn['triggered'])} 3+↑",
+        "— Buy Indicators —",
+        format_rule("Fear and Greed", br["fear_greed"], show_rating=True),
+        format_rule("VIX",            br["vix"]),
+        format_rule("S5FI",           br["s5fi"], unit="%"),
+        format_rule("RSI(14)",        br["rsi"]),
+        format_rule("Red Days",       br["red_days"], unit=" days"),
         "",
-        "_⚠️ Not financial advice._",
+        "— Sell Indicators —",
+        format_rule("Fear and Greed", sr["fear_greed"], show_rating=True),
+        format_rule("VIX",            sr["vix"]),
+        format_rule("S5FI",           sr["s5fi"], unit="%"),
+        format_rule("RSI(14)",        sr["rsi"]),
+        format_rule("Green Days",     sr["green_days"], unit=" days"),
+        "",
+        "⚠️ _Not financial advice. Based on historical statistics._",
     ]
 
     return "\n".join(lines)

@@ -16,14 +16,14 @@ def get_sp500_tickers() -> list[str]:
         return []
 
 
-def get_s5fi() -> float | None:
+def get_s5fi() -> dict:
     """
-    Calculate S5FI: % of S&P 500 stocks trading above their 50-day SMA.
+    Calculate S5FI: % of S&P 500 stocks above their 50-day SMA, for today and yesterday.
     Downloads all tickers in a single batch for speed.
     """
     tickers = get_sp500_tickers()
     if not tickers:
-        return None
+        return {"value": None, "prev": None}
 
     try:
         data = yf.download(
@@ -37,37 +37,43 @@ def get_s5fi() -> float | None:
         closes = data["Close"] if isinstance(data.columns, pd.MultiIndex) else data[["Close"]].rename(columns={"Close": tickers[0]})
     except Exception as e:
         print(f"[s5fi] Download error: {e}")
-        return None
+        return {"value": None, "prev": None}
 
-    above = 0
-    total = 0
+    above_today = 0
+    above_prev = 0
+    total_today = 0
+    total_prev = 0
+
     for ticker in tickers:
         if ticker not in closes.columns:
             continue
         series = closes[ticker].dropna()
-        if len(series) < 50:
-            continue
-        sma50 = series.rolling(50).mean().iloc[-1]
-        last_close = series.iloc[-1]
-        total += 1
-        if last_close > sma50:
-            above += 1
+        sma = series.rolling(50).mean()
 
-    if total == 0:
-        return None
+        if len(series) >= 50:
+            total_today += 1
+            if series.iloc[-1] > sma.iloc[-1]:
+                above_today += 1
 
-    s5fi = round((above / total) * 100, 2)
-    print(f"[s5fi] {above}/{total} stocks above 50MA = {s5fi}%")
-    return s5fi
+        if len(series) >= 51:
+            total_prev += 1
+            if series.iloc[-2] > sma.iloc[-2]:
+                above_prev += 1
+
+    value = round((above_today / total_today) * 100, 2) if total_today else None
+    prev = round((above_prev / total_prev) * 100, 2) if total_prev else None
+
+    print(f"[s5fi] today {above_today}/{total_today} = {value}%  |  prev {above_prev}/{total_prev} = {prev}%")
+    return {"value": value, "prev": prev}
 
 
-def check_s5fi(s5fi: float) -> bool:
-    if s5fi is None:
+def check_s5fi(s5fi_val: float) -> bool:
+    if s5fi_val is None:
         return False
-    return s5fi < 20
+    return s5fi_val < 20
 
 
-def check_sell_s5fi(s5fi: float) -> bool:
-    if s5fi is None:
+def check_sell_s5fi(s5fi_val: float) -> bool:
+    if s5fi_val is None:
         return False
-    return s5fi > 80
+    return s5fi_val > 80
