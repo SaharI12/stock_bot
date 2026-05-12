@@ -70,7 +70,12 @@ def get_s5fi() -> float | None:
 
 
 def check_s5fi(s5fi: float) -> bool:
-    """Rule fires when S5FI < 20 (fewer than 20% of stocks above 50MA)."""
     if s5fi is None:
         return False
     return s5fi < 20
+
+
+def check_sell_s5fi(s5fi: float) -> bool:
+    if s5fi is None:
+        return False
+    return s5fi > 80

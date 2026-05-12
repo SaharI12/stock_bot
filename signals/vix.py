@@ -18,7 +18,12 @@ def get_vix() -> float | None:
 
 
 def check_vix(vix: float) -> bool:
-    """Rule fires when VIX >= 30."""
     if vix is None:
         return False
     return vix >= 30
+
+
+def check_sell_vix(vix: float) -> bool:
+    if vix is None:
+        return False
+    return vix < 15

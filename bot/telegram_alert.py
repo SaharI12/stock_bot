@@ -12,7 +12,7 @@ def format_rule(name: str, data: dict) -> str:
         value_str = f"{value} ({data.get('rating', '')})"
     elif name == "s5fi":
         value_str = f"{value}%"
-    elif name == "red_days":
+    elif name in ("red_days", "green_days"):
         value_str = f"{value} days"
     else:
         value_str = str(value)
@@ -23,6 +23,7 @@ def format_rule(name: str, data: dict) -> str:
         "vix": "VIX",
         "s5fi": "S5FI",
         "red_days": "Red Days",
+        "green_days": "Green Days",
     }.get(name, name)
 
     return f"{icon} *{label}*: {value_str}  _(trigger: {threshold})_"
@@ -32,20 +33,27 @@ def build_message(report: dict) -> str:
     today = date.today().strftime("%B %d, %Y")
     spy = report.get("spy_price", "N/A")
     signal = report["signal"]
-    score = report["score"]
-    rules = report["rules"]
+    buy_score = report["buy_score"]
+    sell_score = report["sell_score"]
 
     lines = [
         f"📊 *Dip Radar — {today}*",
         f"SPY: `${spy}`",
         "",
         f"*Signal: {signal}*",
-        f"Rules triggered: {score}/4",
         "",
-        "— Indicators —",
+        f"— Buy Indicators ({buy_score}/4) —",
     ]
 
-    for name, data in rules.items():
+    for name, data in report["buy_rules"].items():
+        lines.append(format_rule(name, data))
+
+    lines += [
+        "",
+        f"— Sell Indicators ({sell_score}/4) —",
+    ]
+
+    for name, data in report["sell_rules"].items():
         lines.append(format_rule(name, data))
 
     lines += [

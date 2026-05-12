@@ -30,5 +30,20 @@ def count_consecutive_red_days(closes: list[float]) -> int:
 
 
 def check_red_days(closes: list[float]) -> bool:
-    """Rule fires when there are exactly 3+ consecutive red days."""
     return count_consecutive_red_days(closes) >= 3
+
+
+def count_consecutive_green_days(closes: list[float]) -> int:
+    if len(closes) < 2:
+        return 0
+    count = 0
+    for i in range(len(closes) - 1, 0, -1):
+        if closes[i] > closes[i - 1]:
+            count += 1
+        else:
+            break
+    return count
+
+
+def check_green_days(closes: list[float]) -> bool:
+    return count_consecutive_green_days(closes) >= 3

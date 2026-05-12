@@ -35,16 +35,18 @@ stock_bot/
 
 ## What It Does
 
-Runs 4 market signal checks and sends a Telegram alert with the results:
+Runs 4 market signal checks on both the buy side and sell side, then sends a Telegram alert.
+The final signal is determined by whichever side scores higher (or MIXED if tied and > 0).
 
-| Signal | Indicator | Trigger Condition |
-|--------|-----------|-------------------|
-| Fear & Greed | CNN Fear & Greed Index | score < 10 (Extreme Fear) |
-| VIX | CBOE Volatility Index | >= 30 |
-| S5FI | % of S&P 500 above 50-day SMA | < 20% |
-| Red Days | SPY consecutive red days | >= 3 days |
+| Signal | Buy triggers at | Sell triggers at |
+|--------|-----------------|------------------|
+| Fear & Greed | score < 10 (Extreme Fear) | score > 80 (Extreme Greed) |
+| VIX | >= 30 | < 15 (Complacency) |
+| S5FI | < 20% above 50-day SMA | > 80% above 50-day SMA |
+| Red/Green Days | 3+ consecutive red days | 3+ consecutive green days |
 
-Score 4/4 = EXTREME BUY, 3/4 = STRONG BUY, 2/4 = WATCH, 1/4 = MILD, 0/4 = HOLD.
+Buy: 4/4 = EXTREME BUY, 3/4 = STRONG BUY, 2/4 = WATCH, 1/4 = MILD BUY, 0/4 = HOLD.
+Sell: 4/4 = EXTREME SELL, 3/4 = STRONG SELL, 2/4 = WATCH, 1/4 = MILD SELL, 0/4 = HOLD.
 
 ---
 

@@ -22,7 +22,12 @@ def get_fear_greed() -> dict:
 
 
 def check_fear_greed(score: float) -> bool:
-    """Rule fires when Extreme Fear (score < 10)."""
     if score is None:
         return False
     return score < 10
+
+
+def check_sell_fear_greed(score: float) -> bool:
+    if score is None:
+        return False
+    return score > 80

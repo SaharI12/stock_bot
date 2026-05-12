@@ -20,9 +20,16 @@ def main():
     report = run_engine()
 
     print(f"\nSignal: {report['signal']}")
-    print(f"Score:  {report['score']}/4\n")
+    print(f"Buy score:  {report['buy_score']}/4")
+    print(f"Sell score: {report['sell_score']}/4\n")
 
-    for name, data in report["rules"].items():
+    print("Buy indicators:")
+    for name, data in report["buy_rules"].items():
+        status = "TRIGGERED" if data["triggered"] else "not triggered"
+        print(f"  {name}: {data['value']} → {status}")
+
+    print("\nSell indicators:")
+    for name, data in report["sell_rules"].items():
         status = "TRIGGERED" if data["triggered"] else "not triggered"
         print(f"  {name}: {data['value']} → {status}")
 
