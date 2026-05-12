@@ -1,7 +1,7 @@
 import yfinance as yf
 
 
-def get_spy_closes(n_days: int = 10) -> list[float]:
+def get_spy_closes(n_days: int = 200) -> list[float]:
     """Fetch last N closing prices for SPY."""
     try:
         spy = yf.Ticker("SPY")

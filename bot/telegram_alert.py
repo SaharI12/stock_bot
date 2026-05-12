@@ -3,62 +3,55 @@ import requests
 from datetime import date
 
 
-def format_rule(name: str, data: dict) -> str:
-    icon = "✅" if data["triggered"] else "❌"
-    value = data.get("value")
-    if value is None:
-        value_str = "N/A"
-    elif name == "fear_greed":
-        value_str = f"{value} ({data.get('rating', '')})"
-    elif name == "s5fi":
-        value_str = f"{value}%"
-    elif name in ("red_days", "green_days"):
-        value_str = f"{value} days"
-    else:
-        value_str = str(value)
-
-    threshold = data.get("threshold", "")
-    label = {
-        "fear_greed": "Fear & Greed",
-        "vix": "VIX",
-        "s5fi": "S5FI",
-        "red_days": "Red Days",
-        "green_days": "Green Days",
-    }.get(name, name)
-
-    return f"{icon} *{label}*: {value_str}  _(trigger: {threshold})_"
+def _icon(triggered: bool) -> str:
+    return "✅" if triggered else "❌"
 
 
 def build_message(report: dict) -> str:
     today = date.today().strftime("%B %d, %Y")
     spy = report.get("spy_price", "N/A")
+    vs_150 = report.get("spy_vs_150ma")
+    indices = report.get("indices", {})
     signal = report["signal"]
     buy_score = report["buy_score"]
     sell_score = report["sell_score"]
+    br = report["buy_rules"]
+    sr = report["sell_rules"]
+
+    # 150MA distance string
+    if vs_150 is not None:
+        sign = "+" if vs_150 >= 0 else ""
+        ma_str = f"_{sign}{vs_150}% vs 150MA_"
+    else:
+        ma_str = ""
+
+    # Index prices
+    qqq = f"QQQ `${indices.get('QQQ', 'N/A')}`"
+    djia_val = indices.get("DJIA")
+    djia = f"DJIA `{djia_val:,}`" if djia_val else "DJIA `N/A`"
+    rut = f"RUT `${indices.get('RUT', 'N/A')}`"
+
+    fg = br["fear_greed"]
+    vix = br["vix"]
+    s5fi = br["s5fi"]
+    rsi = br["rsi"]
+    red = br["red_days"]
+    grn = sr["green_days"]
 
     lines = [
         f"📊 *Dip Radar — {today}*",
-        f"SPY: `${spy}`",
+        f"SPY `${spy}` {ma_str}  ·  {qqq}  ·  {djia}  ·  {rut}",
         "",
-        f"*Signal: {signal}*",
+        f"*{signal}*",
+        f"buy {buy_score}/5  ·  sell {sell_score}/5",
         "",
-        f"— Buy Indicators ({buy_score}/4) —",
-    ]
-
-    for name, data in report["buy_rules"].items():
-        lines.append(format_rule(name, data))
-
-    lines += [
+        f"*F&G*  {fg['value']} ({fg.get('rating', '')})  —  B{_icon(fg['triggered'])} S{_icon(sr['fear_greed']['triggered'])}",
+        f"*VIX*  {vix['value']}  —  B{_icon(vix['triggered'])} S{_icon(sr['vix']['triggered'])}",
+        f"*S5FI*  {s5fi['value']}%  —  B{_icon(s5fi['triggered'])} S{_icon(sr['s5fi']['triggered'])}",
+        f"*RSI(14)*  {rsi['value']}  —  B{_icon(rsi['triggered'])} S{_icon(sr['rsi']['triggered'])}",
+        f"*Days*  {red['value']}↓ {grn['value']}↑  —  B{_icon(red['triggered'])} S{_icon(grn['triggered'])}",
         "",
-        f"— Sell Indicators ({sell_score}/4) —",
-    ]
-
-    for name, data in report["sell_rules"].items():
-        lines.append(format_rule(name, data))
-
-    lines += [
-        "",
-        "⚠️ _Not financial advice. Based on historical statistics._",
+        "_⚠️ Not financial advice._",
     ]
 
     return "\n".join(lines)
@@ -74,12 +67,7 @@ def send_telegram(report: dict) -> bool:
 
     message = build_message(report)
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-
-    payload = {
-        "chat_id": chat_id,
-        "text": message,
-        "parse_mode": "Markdown",
-    }
+    payload = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
 
     try:
         r = requests.post(url, json=payload, timeout=10)

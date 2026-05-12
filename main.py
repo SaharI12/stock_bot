@@ -20,18 +20,19 @@ def main():
     report = run_engine()
 
     print(f"\nSignal: {report['signal']}")
-    print(f"Buy score:  {report['buy_score']}/4")
-    print(f"Sell score: {report['sell_score']}/4\n")
+    print(f"Buy score:  {report['buy_score']}/5")
+    print(f"Sell score: {report['sell_score']}/5")
+    print(f"SPY vs 150MA: {report.get('spy_vs_150ma')}%")
+    print(f"Indices: {report.get('indices')}\n")
 
-    print("Buy indicators:")
-    for name, data in report["buy_rules"].items():
-        status = "TRIGGERED" if data["triggered"] else "not triggered"
-        print(f"  {name}: {data['value']} → {status}")
-
-    print("\nSell indicators:")
-    for name, data in report["sell_rules"].items():
-        status = "TRIGGERED" if data["triggered"] else "not triggered"
-        print(f"  {name}: {data['value']} → {status}")
+    print(f"{'Indicator':<12} {'Value':<20} {'Buy':<10} Sell")
+    for name in report["buy_rules"]:
+        bdata = report["buy_rules"][name]
+        sell_name = name if name != "red_days" else "green_days"
+        sdata = report["sell_rules"].get(sell_name, {})
+        b = "TRIGGERED" if bdata["triggered"] else "-"
+        s = "TRIGGERED" if sdata.get("triggered") else "-"
+        print(f"  {name:<12} {str(bdata['value']):<20} {b:<10} {s}")
 
     print("\nSending Telegram alert...")
     send_telegram(report)

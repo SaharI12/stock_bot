@@ -43,10 +43,13 @@ The final signal is determined by whichever side scores higher (or MIXED if tied
 | Fear & Greed | score < 10 (Extreme Fear) | score > 80 (Extreme Greed) |
 | VIX | >= 30 | < 15 (Complacency) |
 | S5FI | < 20% above 50-day SMA | > 80% above 50-day SMA |
+| RSI(14) on SPY | < 30 (oversold) | > 70 (overbought) |
 | Red/Green Days | 3+ consecutive red days | 3+ consecutive green days |
 
-Buy: 4/4 = EXTREME BUY, 3/4 = STRONG BUY, 2/4 = WATCH, 1/4 = MILD BUY, 0/4 = HOLD.
-Sell: 4/4 = EXTREME SELL, 3/4 = STRONG SELL, 2/4 = WATCH, 1/4 = MILD SELL, 0/4 = HOLD.
+Buy: 5/5 = EXTREME BUY, 4/5 = STRONG BUY, 3/5 = BUY, 2/5 = WATCH, 1/5 = MILD BUY, 0/5 = HOLD.
+Sell: 5/5 = EXTREME SELL, 4/5 = STRONG SELL, 3/5 = SELL, 2/5 = WATCH, 1/5 = MILD SELL, 0/5 = HOLD.
+
+Message also shows SPY % distance from 150-day MA and QQQ / DJIA / RUT prices.
 
 ---
 
